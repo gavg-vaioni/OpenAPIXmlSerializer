@@ -172,7 +172,10 @@ class XmlSerializer
      */
     private function _serializeVar($var, \DOMElement &$element)
     {
-        $element->nodeValue = (string)$var;
+        if(is_bool($var))
+            $element->nodeValue = $var ? 'true' : 'false';
+        else
+            $element->nodeValue = (string)$var;
 
         return $element;
     }

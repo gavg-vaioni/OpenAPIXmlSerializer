@@ -110,9 +110,14 @@ class XmlDeserializer
     {
         $type = $node->getAttributeNS('urn:kadet:serializer', 'type');
 
+        $hasAttributes = false;
+        foreach($node->attributes as $attribute)
+            if(strpos($attribute->nodeName, ':') === false)
+                $hasAttributes = true;
+
         if ($type == 'array')
             return $this->_deserializeArray($node);
-        elseif (class_exists($type) || $node->firstChild instanceof \DOMElement)
+        elseif (class_exists($type) || $node->firstChild instanceof \DOMElement || $hasAttributes)
             return $this->_deserializeObject($node, $class);
         else
             return $this->_deserializeVar($node);

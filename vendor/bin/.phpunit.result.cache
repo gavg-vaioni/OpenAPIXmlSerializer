@@ -1,1 +1,0 @@
-{"version":1,"defects":{"Tests\\Unit\\SerializationTest::testXmlSerializer":8,"Tests\\Unit\\DeserializationTest::testXmlDeserializer":8},"times":{"Tests\\Unit\\SerializationTest::testXmlSerializer":0.001,"Tests\\Unit\\DeserializationTest::testXmlDeserializer":0.004}}

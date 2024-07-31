@@ -4,36 +4,26 @@ declare(strict_types=1);
 
 namespace Vaioni\OpenApiXmlSerializer;
 
+use DOMDocument;
+use DOMElement;
+
 class XmlSerializer
 {
-    /**
-     * @var \DOMDocument
-     */
-    private $_document;
+    private DOMDocument $_document;
 
     /**
      * Default DAO for serialized objects.
-     *
-     * @var string
      */
-    public $dao = 'stdClass';
+    public string $dao = 'stdClass';
 
     public function __construct()
     {
-        $this->_document               = new \DOMDocument('1.0', 'UTF-8');
+        $this->_document               = new DOMDocument('1.0', 'UTF-8');
         $this->_document->formatOutput = true;
         $this->_document->preserveWhiteSpace = false;
     }
 
-    /**
-     * Serializes object.
-     *
-     * @param object      $var
-     * @param \DOMElement $node
-     *
-     * @return \DOMElement
-     */
-    private function _serializeObject($var, \DOMElement &$node)
+    private function _serializeObject(object $var, DOMElement &$node): DOMElement
     {
         $getters = $var::getters();
 
@@ -57,40 +47,16 @@ class XmlSerializer
         return $node;
     }
 
-    /**
-     * Serializes object to specified element.
-     *
-     * @param mixed       $var
-     * @param \DOMElement $node
-     *
-     * @return \DOMElement
-     */
-    public function serializeElement($var, \DOMElement &$node)
+    public function serializeElement(mixed $var, DOMElement &$node): DOMElement
     {
-        switch (gettype($var)) {
-            case 'object':
-                $node = $this->_serializeObject($var, $node);
-                break;
-            case 'array':
-                $node = $this->_serializeArray($var, $node);
-                break;
-            default:
-                $node = $this->_serializeVar($var, $node);
-                break;
-        }
-
-        return $node;
+        return match (gettype($var)) {
+            'object' => $this->_serializeObject($var, $node),
+            'array' => $this->_serializeArray($var, $node),
+            default => $this->_serializeVar($var, $node),
+        };
     }
 
-    /**
-     * Serializes object.
-     *
-     * @param mixed  $var Object to serialize.
-     * @param string $tag XML Tag for root.
-     *
-     * @return string XML string with serialized object.
-     */
-    public function serialize($var, $tag = null)
+    public function serialize(mixed $var, string $tag = null): string
     {
         // SOAP ENVELOPE ELEMENT AND ATTRIBUTES
         $soap = $this->_document->createElementNS('http://schemas.xmlsoap.org/soap/envelope/', 'soap:Envelope');
@@ -115,28 +81,14 @@ class XmlSerializer
         return $this->_document->saveXML();
     }
 
-    /**
-     * Gets tag for variable.
-     *
-     * @param mixed $var Variable to determine tag.
-     *
-     * @return string Xml Tag.
-     */
-    private function _getTag($var)
+    private function _getTag(mixed $var): string
     {
-        if (!is_object($var)) return gettype($var);
-        return (new $var)->getModelName();
+        return is_object($var)
+        ? (new $var)->getModelName()
+        : gettype($var);
     }
 
-    /**
-     * Serializes array to xml element.
-     *
-     * @param array       $array Array to serialize.
-     * @param \DOMElement $node  Xml node.
-     *
-     * @return \DOMElement
-     */
-    private function _serializeArray(array $array, \DOMElement &$node)
+    private function _serializeArray(array $array, DOMElement &$node): DOMElement
     {
         foreach ($array as $key => $value) {
             $element = $node->ownerDocument->createElement('element');
@@ -147,15 +99,7 @@ class XmlSerializer
         return $node;
     }
 
-    /**
-     * Serializes scalar to xml node.
-     *
-     * @param mixed       $var     Scalar to serialize.
-     * @param \DOMElement $element Xml node.
-     *
-     * @return \DOMElement
-     */
-    private function _serializeVar($var, \DOMElement &$element)
+    private function _serializeVar(mixed $var, DOMElement &$element): DOMElement
     {
         if (is_bool($var))
             $element->nodeValue = $var ? 'true' : 'false';

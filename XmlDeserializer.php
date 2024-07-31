@@ -4,41 +4,32 @@ declare(strict_types=1);
 
 namespace Vaioni\OpenApiXmlSerializer;
 
+use DOMDocument;
+use DOMElement;
+use DOMNode;
+use DOMText;
+
 class XmlDeserializer
 {
-    /**
-     * @var \DOMDocument
-     */
-    private $_document;
+    private DOMDocument $_document;
 
     /**
      * Default DAO
-     * @var string
      */
-    public static $dao = 'stdClass';
+    public static string $dao = 'stdClass';
 
     protected string $targetNamespace;
 
     public function __construct(string $targetNamespace)
     {
-        $this->_document                     = new \DOMDocument();
+        $this->_document                     = new DOMDocument();
         $this->_document->formatOutput       = true;
         $this->_document->encoding           = 'utf-8';
         $this->_document->preserveWhiteSpace = false;
         $this->targetNamespace = $targetNamespace;
     }
 
-    /**
-     * Deserializes XML node to object.
-     *
-     * @param \DOMElement $node  XML element to be deserialized.
-     * @param null|string $class Forced DAO class for object.
-     *
-     * @internal param null|object|string $object Forced object or class.
-     *
-     * @return object
-     */
-    private function _deserializeObject(\DOMElement $node, $class = null)
+    private function _deserializeObject(DOMElement $node, string|null $class = null): object
     {
         if (!class_exists($class) && $class !== static::$dao) {
             $class = $this->targetNamespace . '\\' . $node->nodeName;
@@ -67,17 +58,11 @@ class XmlDeserializer
         return $object;
     }
 
-    /**
-     * Deserializes XML node.
-     *
-     * @param \DOMElement $node  Node to deserialize.
-     * @param null|string $class Forced DAO class for object.
-     *
-     * @return array|bool|float|int|object|string
-     */
-    public function deserializeElement(\DOMNode $node, $class = null)
+    public function deserializeElement(
+        DOMNode $node, string|null $class = null
+    ): array|bool|float|int|object|string
     {
-        if ($node instanceof \DOMText || $node->childElementCount === 0) {
+        if ($node instanceof DOMText || $node->childElementCount === 0) {
             return $node->nodeValue;
         }
 
@@ -101,45 +86,22 @@ class XmlDeserializer
         return $this->_deserializeArray($node);
     }
 
-    /**
-     * Deserializes XML string.
-     *
-     * @param string      $xml String that contains xml to deserialize.
-     * @param null|string $class Forced DAO class for object.
-     *
-     * @return array|bool|float|int|object|null|string
-     */
-    public function deserializeString($xml, $class = null)
+    public function deserializeString(string $xml, string|null $class = null): array|bool|float|int|object|null|string
     {
         $this->_document->loadXML($xml);
 
         return $this->_deserialize($class);
     }
 
-    /**
-     * Deserializes array from XML node.
-     *
-     * @param \DOMElement $node Node to be deserialized.
-     *
-     * @return array Deserialized array.
-     */
-    private function _deserializeArray(\DOMElement $node)
+    private function _deserializeArray(DOMElement $node): array
     {
-        $array = array();
-        foreach ($node->childNodes as $element)
-            if($element instanceof \DOMElement)
-                $array[] = $this->deserializeElement($element);
-
-        return $array;
+        return array_map(
+            $this->deserializeElement(...),
+            iterator_to_array($node->childNodes)
+        );
     }
 
-    /**
-     * Deserialization helper.
-     *
-     * @param null|string $class Forced DAO class for object.
-     * @return array|bool|float|int|object|null|string
-     */
-    private function _deserialize($class = null)
+    private function _deserialize(string|null $class = null): array|bool|float|int|object|null|string
     {
         $node = ($this->_document->documentElement->nodeName == 'soap:Envelope')
         ? $this->_document->documentElement->firstChild->firstChild

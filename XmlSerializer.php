@@ -20,9 +20,9 @@ class XmlSerializer
 
     public function __construct()
     {
-        $this->_document               = new \DOMDocument();
+        $this->_document               = new \DOMDocument('1.0', 'UTF-8');
         $this->_document->formatOutput = true;
-        $this->_document->encoding     = 'utf-8';
+        $this->_document->preserveWhiteSpace = false;
     }
 
     /**
@@ -68,11 +68,8 @@ class XmlSerializer
         switch (gettype($var)) {
             case 'object':
                 $node = $this->_serializeObject($var, $node);
-                if (get_class($var) != $this->dao)
-                    $node->setAttribute('s:type', htmlspecialchars(get_class($var)));
                 break;
             case 'array':
-                $node->setAttribute('s:type', 'array');
                 $node = $this->_serializeArray($var, $node);
                 break;
             default:
@@ -93,14 +90,23 @@ class XmlSerializer
      */
     public function serialize($var, $tag = null)
     {
-        if (isset($this->_document->documentElement))
-            $this->_document->removeChild($this->_document->documentElement);
-        $element = $this->_document->createElement(empty($tag) ? $this->_getTag($var) : $tag);
-        $this->_document->appendChild($this->serializeElement($var, $element));
-        $this->_document->documentElement->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:s', 'urn:vaioni:serializer');
+        // SOAP ENVELOPE ELEMENT AND ATTRIBUTES
+        $soap = $this->_document->createElementNS('http://schemas.xmlsoap.org/soap/envelope/', 'soap:Envelope');
+        $this->_document->appendChild($soap);
 
-        if ($this->dao != 'stdClass')
-            $this->_document->documentElement->setAttribute('s:dao', $this->dao);
+        $soap->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:soap', 'http://schemas.xmlsoap.org/soap/envelope/');
+
+        // SOAP BODY
+        $body = $this->_document->createElementNS('http://schemas.xmlsoap.org/soap/envelope/', 'soap:Body');
+        $soap->appendChild($body);
+
+        // XML
+        $body->appendChild(
+            $this->serializeElement(
+                $var,
+                $this->_document->createElement(empty($tag) ? $this->_getTag($var) : $tag)
+            )
+        );
 
         return $this->_document->saveXML();
     }

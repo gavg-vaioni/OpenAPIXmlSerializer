@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+    <soap:Body>
+        <queryAddressSearchRequest>
+            <message>
+                <messageId>QRL:2</messageId>
+                <correlationId>66aa00c24d7cf1.67709300</correlationId>
+                <sentAt>2024-07-31T09:15:46Z</sentAt>
+            </message>
+            <buyer/>
+            <seller/>
+            <location>
+                <postcode>LL129RS</postcode>
+            </location>
+        </queryAddressSearchRequest>
+    </soap:Body>
+</soap:Envelope>

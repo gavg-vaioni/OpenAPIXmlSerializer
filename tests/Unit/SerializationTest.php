@@ -10,8 +10,12 @@ final class SerializationTest extends TestCase
 {
     public function testXmlSerializer()
     {
-        $object = unserialize(base64_decode(file_get_contents('tests/data/request.ser')));
-        $result = (new \Vaioni\OpenApiXmlSerializer\XmlSerializer())->serialize($object);
-        echo $result;
+        $this->assertXmlStringEqualsXmlString(
+            file_get_contents('tests/data/request.xml'),
+            (new \Vaioni\OpenApiXmlSerializer\XmlSerializer())
+            ->serialize(
+                unserialize(base64_decode(file_get_contents('tests/data/request.ser')))
+            )
+        );
     }
 }

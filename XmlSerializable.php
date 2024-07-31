@@ -1,13 +1,6 @@
 <?php
-namespace Kadet\XmlSerializer;
+namespace Vaioni\OpenApiOpenApiXmlSerializer;
 
-/**
- * Interface XmlSerializable
- *
- * Allows to implement own xml serialization mechanism for class.
- *
- * @package Kadet\XmlSerializer
- */
 interface XmlSerializable
 {
     /**
@@ -29,4 +22,4 @@ interface XmlSerializable
      * @return mixed Deserialized object.
      */
     public static function fromXml(\DOMElement $node, XmlDeserializer $deserializer);
-} 
+}

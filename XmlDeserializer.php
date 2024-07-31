@@ -1,17 +1,6 @@
 <?php
-/**
- * Copyright (C) 2014, Some right reserved.
- * @author  Kacper "Kadet" Donat <kadet1090@gmail.com>
- * @license http://creativecommons.org/licenses/by-sa/4.0/legalcode CC BY-SA
- *
- * Contact with author:
- * Xmpp: kadet@jid.pl
- * E-mail: kadet1090@gmail.com
- *
- * From Kadet with love.
- */
 
-namespace Kadet\XmlSerializer;
+namespace Vaioni\OpenApiXmlSerializer;
 
 require_once 'functions.php';
 
@@ -49,11 +38,11 @@ class XmlDeserializer
     private function _deserializeObject(\DOMElement $node, $class = null)
     {
         if (!class_exists($class)) {
-            $class = $node->getAttributeNS('urn:kadet:serializer', 'type');
+            $class = $node->getAttributeNS('urn:vaioni:serializer', 'type');
             if (empty($class)) $class = $this->dao;
         }
 
-        if (is_subclass_of($class, 'Kadet\\XmlSerializer\\XmlSerializable'))
+        if (is_subclass_of($class, 'Vaioni\\OpenApiXmlSerializer\\XmlSerializable'))
             return $class::fromXml($node, $this);
 
         $object = new $class;
@@ -108,7 +97,7 @@ class XmlDeserializer
      */
     public function deserializeElement(\DOMElement $node, $class = null)
     {
-        $type = $node->getAttributeNS('urn:kadet:serializer', 'type');
+        $type = $node->getAttributeNS('urn:vaioni:serializer', 'type');
 
         $hasAttributes = false;
         foreach($node->attributes as $attribute)
@@ -165,7 +154,7 @@ class XmlDeserializer
         $array = array();
         foreach ($node->childNodes as $element)
             if($element instanceof \DOMElement)
-                $array[$element->getAttributeNS('urn:kadet:serializer', 'key')] = $this->deserializeElement($element);
+                $array[$element->getAttributeNS('urn:vaioni:serializer', 'key')] = $this->deserializeElement($element);
 
         return $array;
     }
@@ -179,7 +168,7 @@ class XmlDeserializer
      */
     private function _deserializeVar(\DOMElement $node)
     {
-        switch ($node->getAttributeNS('urn:kadet:serializer', 'type')) {
+        switch ($node->getAttributeNS('urn:vaioni:serializer', 'type')) {
             case 'double':
                 return doubleval($node->nodeValue);
             case 'string':
@@ -201,9 +190,9 @@ class XmlDeserializer
      */
     private function _deserialize($class = null)
     {
-        if ($this->_document->documentElement->hasAttributeNS('urn:kadet:serializer', 'dao'))
-            $this->dao = $this->_document->documentElement->getAttributeNS('urn:kadet:serializer', 'dao');
+        if ($this->_document->documentElement->hasAttributeNS('urn:vaioni:serializer', 'dao'))
+            $this->dao = $this->_document->documentElement->getAttributeNS('urn:vaioni:serializer', 'dao');
 
         return $this->deserializeElement($this->_document->documentElement, $class);
     }
-} 
+}

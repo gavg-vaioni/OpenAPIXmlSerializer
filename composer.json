@@ -1,24 +1,26 @@
 {
-    "name": "kadet/xml-serializer",
+    "name": "vaioni/open-api-xml-serializer",
     "type": "library",
     "description": "PHP Xml Serializer, with annotation support.",
     "keywords": ["xml","serialization","annotations"],
-    "homepage": "https://github.com/kadet1090/XmlSerializer",
+    "homepage": "https://github.com/gavg-vaion/OpenApiXmlSerializer",
     "license": "CC BY-NA",
-    "authors": [
-        {
-            "name": "Kacper \"Kadet\" Donat",
-            "email": "kadet1090@gmail.com",
-            "homepage": "http://kadet.pipe-software.xaa.pl",
-            "role": "Developer"
-        }
-    ],
     "require": {
-        "php": ">=5.3.0"
+        "php": "^7.4 || ^8.0"
+    },
+    "require-dev": {
+        "vaioni/city_fibre_sdk": "dev-master",
+        "phpunit/phpunit": "^11.2"
     },
     "autoload": {
         "psr-4": {
-            "Kadet\\XmlSerializer\\": "."
+            "Vaioni\\OpenApiXmlSerializer\\": "."
         }
-    }
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://bitbucket.org/vaioni1/cityfibresdk.git"
+        }
+    ]
 }

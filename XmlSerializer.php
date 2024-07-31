@@ -1,17 +1,6 @@
 <?php
-/**
- * Copyright (C) 2014, Some right reserved.
- * @author  Kacper "Kadet" Donat <kadet1090@gmail.com>
- * @license http://creativecommons.org/licenses/by-sa/4.0/legalcode CC BY-SA
- *
- * Contact with author:
- * Xmpp: kadet@jid.pl
- * E-mail: kadet1090@gmail.com
- *
- * From Kadet with love.
- */
 
-namespace Kadet\XmlSerializer;
+namespace Vaioni\OpenApiXmlSerializer;
 
 require_once 'functions.php';
 
@@ -46,28 +35,21 @@ class XmlSerializer
      */
     private function _serializeObject($var, \DOMElement &$node)
     {
-        if (is_subclass_of($var, 'Kadet\\XmlSerializer\\XmlSerializable'))
-            return $var->toXml($node, $this);
+        $getters = $var::getters();
 
-        $reflection = new \ReflectionObject($var);
-        foreach ($reflection->getProperties() as $property) {
-            $property->setAccessible(true);
-            $annotations = getAnnotations($property->getDocComment());
+        foreach ($var::attributeMap() as $property => $name) {
+            $getter = $getters[$property];
 
-            if (isset($annotations['xml-skip'])) continue;
+            $value = $var->$getter();
 
-            $value = $property->getValue($var);
+            if ($value === null) continue;
 
-            if (isset($annotations['xml-attrib'])) {
-                $name = !empty($annotations['xml-attrib']) ? $annotations['xml-attrib'] : $property->getName();
-                $node->setAttribute($name, is_array($value) || is_object($value) ? serialize($value) : $value);
-            } else {
-                $name    = !empty($annotations['xml-tag']) ? $annotations['xml-tag'] : $property->getName();
-                $element = $this->_document->createElement($name);
-                $node->appendChild($this->serializeElement($value, $element));
-            }
-
-            if (!$property->isPublic()) $property->setAccessible(false);
+            $node->appendChild(
+                $this->serializeElement(
+                    $value,
+                    $this->_document->createElement($name)
+                )
+            );
         }
 
         return $node;
@@ -115,7 +97,7 @@ class XmlSerializer
             $this->_document->removeChild($this->_document->documentElement);
         $element = $this->_document->createElement(empty($tag) ? $this->_getTag($var) : $tag);
         $this->_document->appendChild($this->serializeElement($var, $element));
-        $this->_document->documentElement->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:s', 'urn:kadet:serializer');
+        $this->_document->documentElement->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:s', 'urn:vaioni:serializer');
 
         if ($this->dao != 'stdClass')
             $this->_document->documentElement->setAttribute('s:dao', $this->dao);
@@ -133,14 +115,7 @@ class XmlSerializer
     private function _getTag($var)
     {
         if (!is_object($var)) return gettype($var);
-
-        $reflection  = new \ReflectionObject($var);
-        $annotations = getAnnotations($reflection->getDocComment());
-
-        if (isset($annotations['xml-tag']))
-            return $annotations['xml-tag'];
-        else
-            return basename(get_class($var));
+        return (new $var)->getModelName();
     }
 
     /**
@@ -172,11 +147,11 @@ class XmlSerializer
      */
     private function _serializeVar($var, \DOMElement &$element)
     {
-        if(is_bool($var))
+        if (is_bool($var))
             $element->nodeValue = $var ? 'true' : 'false';
         else
             $element->nodeValue = (string)$var;
 
         return $element;
     }
-} 
+}

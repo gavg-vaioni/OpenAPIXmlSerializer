@@ -15,14 +15,17 @@ class XmlDeserializer
      * Default DAO
      * @var string
      */
-    public $dao = 'stdClass';
+    public static $dao = 'stdClass';
 
-    public function __construct()
+    protected string $targetNamespace;
+
+    public function __construct(string $targetNamespace)
     {
         $this->_document                     = new \DOMDocument();
         $this->_document->formatOutput       = true;
         $this->_document->encoding           = 'utf-8';
         $this->_document->preserveWhiteSpace = false;
+        $this->targetNamespace = $targetNamespace;
     }
 
     /**
@@ -37,51 +40,28 @@ class XmlDeserializer
      */
     private function _deserializeObject(\DOMElement $node, $class = null)
     {
-        if (!class_exists($class)) {
-            $class = $node->getAttributeNS('urn:vaioni:serializer', 'type');
-            if (empty($class)) $class = $this->dao;
+        if (!class_exists($class) && $class !== static::$dao) {
+            $class = $this->targetNamespace . '\\' . $node->nodeName;
+            if (empty($class)) $class = static::$dao;
         }
-
-        if (is_subclass_of($class, 'Vaioni\\OpenApiXmlSerializer\\XmlSerializable'))
-            return $class::fromXml($node, $this);
 
         $object = new $class;
 
-        $reflection = new \ReflectionObject($object);
-        $table      = array();
+        if (method_exists($object, 'setters')) {
+            $setters = $class::setters();
+            $attributeMap = array_flip($class::attributeMap());
 
-        foreach ($reflection->getProperties() as $property) {
-            $property->setAccessible(true);
-            $annotations = getAnnotations($property->getDocComment());
-
-            if (isset($annotations['xml-skip'])) continue;
-            if (isset($annotations['xml-attrib'])) {
-                $name                   = !empty($annotations['xml-attrib']) ? $annotations['xml-attrib'] : $property->getName();
-                $table['attrib'][$name] = $property;
-            } else {
-                $name                  = !empty($annotations['xml-tag']) ? $annotations['xml-tag'] : $property->getName();
-                $table['child'][$name] = $property;
+            foreach ($node->childNodes as $child) {
+                $attribute = $attributeMap[$child->nodeName];
+                $setter = $setters[$attribute] ?? reset($setters);
+                $object->$setter($this->deserializeElement($child));
             }
-        }
 
-        foreach ($node->attributes as $attribute) {
-            if (isset($table['attrib'][$attribute->nodeName])) {
-                $table['attrib'][$attribute->nodeName]->setValue($object, $attribute->nodeValue);
-
-                if (!$table['attrib'][$attribute->nodeName]->isPublic())
-                    $table['attrib'][$attribute->nodeName]->setAccessible(false);
-            }
+            return $object;
         }
 
         foreach ($node->childNodes as $child) {
-            if (isset($table['child'][$child->nodeName])) {
-                $table['child'][$child->nodeName]->setValue($object, $this->deserializeElement($child));
-
-                if (!$table['child'][$child->nodeName]->isPublic())
-                    $table['child'][$child->nodeName]->setAccessible(false);
-            } elseif ($child instanceof \DOMElement) {
-                $object->{$child->nodeName} = $this->deserializeElement($child);
-            }
+            $object->{$child->nodeName} = $this->deserializeElement($child);
         }
 
         return $object;
@@ -95,21 +75,30 @@ class XmlDeserializer
      *
      * @return array|bool|float|int|object|string
      */
-    public function deserializeElement(\DOMElement $node, $class = null)
+    public function deserializeElement(\DOMNode $node, $class = null)
     {
-        $type = $node->getAttributeNS('urn:vaioni:serializer', 'type');
+        if ($node instanceof \DOMText || $node->childElementCount === 0) {
+            return $node->nodeValue;
+        }
 
-        $hasAttributes = false;
-        foreach($node->attributes as $attribute)
-            if(strpos($attribute->nodeName, ':') === false)
-                $hasAttributes = true;
+        if ($class !== null) {
+            // If a class is given, assume we need to deserialize an object
+            return $this->_deserializeObject(
+                $node,
+                class_exists($class)
+                ? $class
+                : static::$dao
+            );
+        }
 
-        if ($type == 'array')
-            return $this->_deserializeArray($node);
-        elseif (class_exists($type) || $node->firstChild instanceof \DOMElement || $hasAttributes)
+        // Guess the class name if none is given
+        $class = $this->targetNamespace . '\\' . ucfirst($node->nodeName);
+
+        if (class_exists($class)) {
             return $this->_deserializeObject($node, $class);
-        else
-            return $this->_deserializeVar($node);
+        }
+
+        return $this->_deserializeArray($node);
     }
 
     /**
@@ -118,26 +107,11 @@ class XmlDeserializer
      * @param string      $xml String that contains xml to deserialize.
      * @param null|string $class Forced DAO class for object.
      *
-     * @return array|bool|float|int|null|string
+     * @return array|bool|float|int|object|null|string
      */
     public function deserializeString($xml, $class = null)
     {
         $this->_document->loadXML($xml);
-
-        return $this->_deserialize($class);
-    }
-
-    /**
-     * Deserializes XML file.
-     *
-     * @param string      $file Path to file.
-     * @param null|string $class Forced DAO class for object.
-     *
-     * @return array|bool|float|int|null|string
-     */
-    public function deserializeFile($file, $class = null)
-    {
-        $this->_document->load($file);
 
         return $this->_deserialize($class);
     }
@@ -154,45 +128,23 @@ class XmlDeserializer
         $array = array();
         foreach ($node->childNodes as $element)
             if($element instanceof \DOMElement)
-                $array[$element->getAttributeNS('urn:vaioni:serializer', 'key')] = $this->deserializeElement($element);
+                $array[] = $this->deserializeElement($element);
 
         return $array;
-    }
-
-    /**
-     * Deserializes scalar value from XML node.
-     *
-     * @param \DOMElement $node Node to be deserialized.
-     *
-     * @return bool|float|int|string
-     */
-    private function _deserializeVar(\DOMElement $node)
-    {
-        switch ($node->getAttributeNS('urn:vaioni:serializer', 'type')) {
-            case 'double':
-                return doubleval($node->nodeValue);
-            case 'string':
-                return strval($node->nodeValue);
-            case 'integer':
-                return intval($node->nodeValue);
-            case 'boolean':
-                return $node->nodeValue == 'false' ? false : (bool)($node->nodeValue);
-            default:
-                return $node->nodeValue;
-        }
     }
 
     /**
      * Deserialization helper.
      *
      * @param null|string $class Forced DAO class for object.
-     * @return array|bool|float|int|null|string
+     * @return array|bool|float|int|object|null|string
      */
     private function _deserialize($class = null)
     {
-        if ($this->_document->documentElement->hasAttributeNS('urn:vaioni:serializer', 'dao'))
-            $this->dao = $this->_document->documentElement->getAttributeNS('urn:vaioni:serializer', 'dao');
+        $node = ($this->_document->documentElement->nodeName == 'soap:Envelope')
+        ? $this->_document->documentElement->firstChild->firstChild
+        : $this->_document->documentElement;
 
-        return $this->deserializeElement($this->_document->documentElement, $class);
+        return $this->deserializeElement($node, $class);
     }
 }

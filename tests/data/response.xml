@@ -1,0 +1,46 @@
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+    <soap:Body>
+        <queryAddressSearchResponse xmlns="http://www.niccstandards.org.uk/ala_1.0.xsd"
+            xmlns:cfh="http://www.cityfibre.com/ala/ext1">
+            <message>
+                <messageId>702357b6-461c-4287-8882-b78f6fb9ce2c</messageId>
+                <correlationId>66aa40514f13c0.57033124</correlationId>
+                <sentAt>2024-07-31T13:46:57.586Z</sentAt>
+            </message>
+            <buyer>
+                <buyerIdentifier>VAIONI</buyerIdentifier>
+            </buyer>
+            <seller>
+                <sellerIdentifier>CITYFIBRE</sellerIdentifier>
+            </seller>
+            <queryAddressSearchAccepted>
+                <locations>
+                    <location>
+                        <addressKey>906700424286</addressKey>
+                        <addressKeyType>
+                            <recognisedAddressKey/>
+                        </addressKeyType>
+                        <britishAddress>
+                            <buildingName>185A</buildingName>
+                            <thoroughfareName>BATH STREET</thoroughfareName>
+                            <postTown>Glasgow</postTown>
+                            <postcode>G2 4HU</postcode>
+                        </britishAddress>
+                        <gpsCoordinates>
+                            <gpsLatitude>N 55 51.865</gpsLatitude>
+                            <gpsLongitude>W 4 15.745</gpsLongitude>
+                        </gpsCoordinates>
+                        <cfh:bduk_subsidised>False</cfh:bduk_subsidised>
+                        <cfh:rfs_status>NOT_RFS_1</cfh:rfs_status>
+                        <cfh:cabinet_area>GLA-8-PN651-SN1</cfh:cabinet_area>
+                        <cfh:cabinet_release_date>2099-01-01</cfh:cabinet_release_date>
+                        <cfh:cabinet_date_rating>DR10</cfh:cabinet_date_rating>
+                        <cfh:property_classification>Business</cfh:property_classification>
+                        <cfh:demand_point_type_category>Individual property</cfh:demand_point_type_category>
+                        <cfh:drop_architecture_type_category>Underground</cfh:drop_architecture_type_category>
+                    </location>
+                </locations>
+            </queryAddressSearchAccepted>
+        </queryAddressSearchResponse>
+    </soap:Body>
+</soap:Envelope>

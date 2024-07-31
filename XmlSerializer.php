@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Vaioni\OpenApiXmlSerializer;
 
-require_once 'functions.php';
-
 class XmlSerializer
 {
     /**

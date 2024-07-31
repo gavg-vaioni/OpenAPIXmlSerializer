@@ -44,10 +44,12 @@ class XmlSerializer
 
             if ($value === null) continue;
 
+            $element = $this->_document->createElement($name);
+
             $node->appendChild(
                 $this->serializeElement(
                     $value,
-                    $this->_document->createElement($name)
+                    $element
                 )
             );
         }
@@ -101,10 +103,12 @@ class XmlSerializer
         $soap->appendChild($body);
 
         // XML
+        $element = $this->_document->createElement(empty($tag) ? $this->_getTag($var) : $tag);
+
         $body->appendChild(
             $this->serializeElement(
                 $var,
-                $this->_document->createElement(empty($tag) ? $this->_getTag($var) : $tag)
+                $element
             )
         );
 

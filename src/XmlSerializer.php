@@ -14,7 +14,7 @@ class XmlSerializer
     ) {
     }
 
-    public function serialize(mixed $var, string|null $tag = null): string
+    public function __invoke(mixed $var, string|null $tag = null): string
     {
         // SOAP envelope element and attributes
         $soap = $this->document->createElementNS(

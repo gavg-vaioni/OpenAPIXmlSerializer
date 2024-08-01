@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Vaioni\OpenApiXmlSerializer\XmlSerializer;
+use Vaioni\OpenApiXmlSerializer\Xml;
 
 final class SerializationTest extends TestCase
 {
@@ -13,9 +13,8 @@ final class SerializationTest extends TestCase
     {
         $this->assertXmlStringEqualsXmlString(
             file_get_contents('tests/data/request.xml'),
-            (new XmlSerializer())
-            ->serialize(
-                unserialize(base64_decode(file_get_contents('tests/data/request.ser'))),
+            Xml::serialize(
+                var: unserialize(base64_decode(file_get_contents('tests/data/request.ser'))),
             ),
         );
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
+use Vaioni\OpenApiXmlSerializer\Xml;
 use Vaioni\OpenApiXmlSerializer\XmlDeserializer;
 
 final class DeserializationTest extends TestCase
@@ -13,10 +14,10 @@ final class DeserializationTest extends TestCase
     {
         $this->assertEqualsCanonicalizing(
             unserialize(base64_decode(file_get_contents('tests/data/response.ser'))),
-            (new XmlDeserializer('\\Vaioni\\CityFibreAPI\\Model'))
-            ->deserialize(
-                file_get_contents('tests/data/response.xml'),
-                XmlDeserializer::$defaultClass,
+            Xml::deserialize(
+                targetNamespace: '\\Vaioni\\CityFibreAPI\\Model',
+                xml: file_get_contents('tests/data/response.xml'),
+                class: XmlDeserializer::$defaultClass,
             ),
         );
     }

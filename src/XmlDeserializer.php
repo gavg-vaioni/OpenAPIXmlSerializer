@@ -12,16 +12,17 @@ use DOMText;
 class XmlDeserializer
 {
     public static string $defaultClass = 'stdClass';
+    private string $targetNamespace;
 
     public function __construct(
-        private string $targetNamespace,
         private DOMDocument $document = new DOMDocument('1.0', 'UTF-8'),
     ) {
         $this->document->preserveWhiteSpace = false;
     }
 
-    public function deserialize(string $xml, string|null $class = null): array|bool|float|int|object|string|null
+    public function __invoke(string $targetNamespace, string $xml, string|null $class = null): array|bool|float|int|object|string|null
     {
+        $this->targetNamespace = $targetNamespace;
         $this->document->loadXML($xml);
 
         $node = $this->document->documentElement->nodeName === 'soap:Envelope'
@@ -76,7 +77,6 @@ class XmlDeserializer
         $class = $this->targetNamespace . '\\' . $node->nodeName;
 
         if (class_exists($class)) {
-            print($class);
             return $this->deserializeObject($node, $class);
         }
 

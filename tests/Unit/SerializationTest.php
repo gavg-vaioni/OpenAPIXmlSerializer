@@ -9,14 +9,14 @@ use Vaioni\OpenApiXmlSerializer\XmlSerializer;
 
 final class SerializationTest extends TestCase
 {
-    public function testXmlSerializer()
+    public function testXmlSerializer(): void
     {
         $this->assertXmlStringEqualsXmlString(
             file_get_contents('tests/data/request.xml'),
             (new XmlSerializer())
             ->serialize(
-                unserialize(base64_decode(file_get_contents('tests/data/request.ser')))
-            )
+                unserialize(base64_decode(file_get_contents('tests/data/request.ser'))),
+            ),
         );
     }
 }

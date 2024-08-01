@@ -1,2 +1,5 @@
 .phpunit.result.cache
 vendor/
+infection_report.log
+/.coverage_reports
+/.phpunit.cache

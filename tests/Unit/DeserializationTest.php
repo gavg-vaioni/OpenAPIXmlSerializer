@@ -9,15 +9,15 @@ use Vaioni\OpenApiXmlSerializer\XmlDeserializer;
 
 final class DeserializationTest extends TestCase
 {
-    public function testXmlDeserializer()
+    public function testXmlDeserializer(): void
     {
         $this->assertEqualsCanonicalizing(
             unserialize(base64_decode(file_get_contents('tests/data/response.ser'))),
             (new XmlDeserializer('\\Vaioni\\CityFibreAPI\\Model'))
-            ->deserializeString(
+            ->deserialize(
                 file_get_contents('tests/data/response.xml'),
-                XmlDeserializer::$dao
-            )
+                XmlDeserializer::$defaultClass,
+            ),
         );
     }
 }

@@ -86,9 +86,10 @@ class XmlDeserializer
     /** @return mixed[] */
     private function deserializeArray(DOMElement $node): array
     {
-        return array_map(
-            $this->deserializeElement(...),
+        return array_reduce(
             iterator_to_array($node->childNodes),
+            fn($result, $node)  => $result + [$node->nodeName => $this->deserializeElement($node)],
+            []
         );
     }
 }

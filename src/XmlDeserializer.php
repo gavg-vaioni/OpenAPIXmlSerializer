@@ -6,90 +6,110 @@ namespace Vaioni\OpenApiXmlSerializer;
 
 use DOMDocument;
 use DOMElement;
-use DOMNode;
-use DOMText;
 
-class XmlDeserializer
+class XmlSerializer
 {
-    public static string $defaultClass = 'stdClass';
-    private string $targetNamespace;
-
     public function __construct(
         private DOMDocument $document = new DOMDocument('1.0', 'UTF-8'),
-    ) {
-        $this->document->preserveWhiteSpace = false;
+    ) {}
+
+    public function __invoke(mixed $var, string|null $tag = null): string
+    {
+        // SOAP envelope element and attributes
+        $soap = $this->document->createElementNS(
+            'http://schemas.xmlsoap.org/soap/envelope/',
+            'soap:Envelope',
+        );
+        $this->document->appendChild($soap);
+
+        $soap->setAttributeNS(
+            'http://www.w3.org/2000/xmlns/',
+            'xmlns:soap',
+            'http://schemas.xmlsoap.org/soap/envelope/',
+        );
+
+        // SOAP body
+        $body = $this->document->createElementNS(
+            'http://schemas.xmlsoap.org/soap/envelope/',
+            'soap:Body',
+        );
+        $soap->appendChild($body);
+
+        // XML
+        $element = $this->document->createElement(empty($tag) ? $this->getTag($var) : $tag);
+
+        $body->appendChild(
+            $this->serializeElement(
+                $var,
+                $element,
+            ),
+        );
+
+        return $this->document->saveXML();
     }
 
-    public function __invoke(string $targetNamespace, string $xml, string|null $class = null): array|bool|float|int|object|string|null
+    private function serializeObject(object $var, DOMElement &$node): DOMElement
     {
-        $this->targetNamespace = $targetNamespace;
-        $this->document->loadXML($xml);
+        $getters = $var::getters();
 
-        $node = $this->document->documentElement->nodeName === 'soap:Envelope'
-        ? $this->document->documentElement->firstChild->firstChild
-            : $this->document->documentElement;
+        foreach ($var::attributeMap() as $property => $name) {
+            $getter = $getters[$property];
 
-        return $this->deserializeElement($node, $class);
-    }
+            $value = $var->$getter();
 
-    private function deserializeObject(DOMElement $node, string|null $class = null): object
-    {
-        if (! class_exists($class)) {
-            $class = static::$defaultClass;
-        }
-
-        $object = new $class();
-
-        if (method_exists($object, 'setters')) {
-            $setters      = $class::setters();
-            $attributeMap = array_flip($class::attributeMap());
-
-            foreach ($node->childNodes as $child) {
-                $attribute = $attributeMap[$child->nodeName];
-                $setter    = $setters[$attribute] ?? reset($setters);
-                $object->$setter($this->deserializeElement($child));
+            if ($value === null) {
+                continue;
             }
 
-            return $object;
+            $element = $this->document->createElement($name);
+
+            $node->appendChild(
+                $this->serializeElement(
+                    $value,
+                    $element,
+                ),
+            );
         }
 
-        foreach ($node->childNodes as $child) {
-            $object->{$child->nodeName} = $this->deserializeElement($child);
-        }
-
-        return $object;
+        return $node;
     }
 
-    private function deserializeElement(
-        DOMNode $node,
-        string|null $class = null,
-    ): array|bool|float|int|object|string {
-        if ($node instanceof DOMText || $node->childElementCount === 0) {
-            return $node->nodeValue;
-        }
-
-        if ($class !== null) {
-            // If a class is given, assume we need to deserialize an object
-            return $this->deserializeObject($node, $class);
-        }
-
-        // Guess the class name if none is given
-        $class = $this->targetNamespace . '\\' . $node->nodeName;
-
-        if (class_exists($class)) {
-            return $this->deserializeObject($node, $class);
-        }
-
-        return $this->deserializeArray($node);
-    }
-
-    /** @return mixed[] */
-    private function deserializeArray(DOMElement $node): array
+    private function serializeElement(mixed $var, DOMElement &$node): DOMElement
     {
-        return array_reduce(
-            iterator_to_array($node->childNodes),
-            fn($result, $node)  => $result + [$node->nodeName => $this->deserializeElement($node)],
-            []
-        );
+        return match (gettype($var)) {
+            'object' => $this->serializeObject($var, $node),
+            'array' => $this->serializeArray($var, $node),
+            default => $this->serializeVar($var, $node),
+        };
+    }
+
+    private function getTag(mixed $var): string
+    {
+        return is_object($var)
+            ? (new $var())->getModelName()
+            : gettype($var);
+    }
+
+    /** @param mixed[] $array */
+    private function serializeArray(array $array, DOMElement &$node): DOMElement
+    {
+        foreach ($array as $key => $value) {
+            $element = $node->ownerDocument->createElement('element');
+            $element->setAttribute('s:key', $key);
+            $node->appendChild($this->serializeElement($value, $element));
+        }
+
+        return $node;
+    }
+
+    private function serializeVar(mixed $var, DOMElement &$element): DOMElement
+    {
+        if (is_bool($var)) {
+            $element->nodeValue = $var ? 'true' : 'false';
+        } else {
+            $element->nodeValue = (string) $var;
+        }
+
+        return $element;
     }
 }

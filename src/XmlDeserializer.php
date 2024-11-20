@@ -44,13 +44,22 @@ class XmlDeserializer
             $setters      = $class::setters();
             $attributeMap = array_flip($class::attributeMap());
 
+            $missingNode = false;
+
             foreach ($node->childNodes as $child) {
+                if (! isset($attributeMap[$child->nodeName])) {
+                    $missingNode = true;
+                    break;
+                }
+
                 $attribute = $attributeMap[$child->nodeName];
                 $setter    = $setters[$attribute] ?? reset($setters);
                 $object->$setter($this->deserializeElement($child));
             }
 
-            return $object;
+            if (!$missingNode) {
+                return $object;
+            }
         }
 
         foreach ($node->childNodes as $child) {
